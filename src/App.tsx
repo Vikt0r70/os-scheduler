@@ -1,3 +1,5 @@
+import { AnimatePresence, motion } from 'motion/react';
+
 import ComparisonTable from './components/ComparisonTable';
 import Footer from './components/Footer';
 import GanttChart from './components/GanttChart';
@@ -71,10 +73,13 @@ export default function App() {
               const isActive = tab.id === selectedAlgorithm;
 
               return (
-                <button
+                <motion.button
                   key={tab.id}
                   type="button"
                   onClick={() => setSelectedAlgorithm(tab.id)}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ duration: 0.16, ease: 'easeOut' }}
                   className={[
                     'min-h-11 cursor-pointer rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
                     isActive
@@ -84,7 +89,7 @@ export default function App() {
                   aria-pressed={isActive}
                 >
                   {tab.label}
-                </button>
+                </motion.button>
               );
             })}
           </nav>
@@ -120,10 +125,19 @@ export default function App() {
             ) : null}
           </div>
 
-          <div className="space-y-6">
-            <GanttChart result={selectedResult} />
-            <MetricsTable result={selectedResult} />
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={selectedResult.algorithm}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="space-y-6"
+            >
+              <GanttChart result={selectedResult} />
+              <MetricsTable result={selectedResult} />
+            </motion.div>
+          </AnimatePresence>
         </section>
 
         <ComparisonTable results={results} />

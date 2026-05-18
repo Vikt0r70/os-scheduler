@@ -1,4 +1,5 @@
 import { type FormEvent, useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 
 import type { Process } from '../types';
 
@@ -264,8 +265,11 @@ export default function ProcessInput({
         {processes.length > 0 ? (
           <div className="grid gap-3">
             {processes.map((process) => (
-              <article
+              <motion.article
                 key={process.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
                 className="glass-card rounded-3xl p-4 transition-colors hover:border-scheduler-accent/30"
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -307,7 +311,7 @@ export default function ProcessInput({
                     </button>
                   </div>
                 </div>
-              </article>
+              </motion.article>
             ))}
           </div>
         ) : (

@@ -1,4 +1,5 @@
 import { useMemo, type CSSProperties } from 'react';
+import { motion } from 'motion/react';
 
 import type { AlgorithmResult, GanttBlock } from '../types';
 import { formatTime, getProcessColor } from '../utils';
@@ -107,8 +108,11 @@ export function GanttChart({ result }: GanttChartProps) {
                 const duration = getBlockDuration(block);
 
                 return (
-                  <li
+                  <motion.li
                     key={`${block.processId ?? 'idle'}-${block.start}-${block.end}-${index}`}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25, delay: index * 0.05, ease: 'easeOut' }}
                     className="flex-none"
                     style={{ width: getSegmentWidth(block) }}
                   >
@@ -129,7 +133,7 @@ export function GanttChart({ result }: GanttChartProps) {
                         {formatTime(block.start)} - {formatTime(block.end)}
                       </p>
                     </article>
-                  </li>
+                  </motion.li>
                 );
               })}
             </ol>
