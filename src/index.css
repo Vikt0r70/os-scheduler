@@ -1,0 +1,22 @@
+@import "tailwindcss";
+@import "./styles/glass.css";
+
+:root {
+  color-scheme: dark;
+  background: var(--scheduler-bg);
+  font-family: var(--scheduler-font-sans);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top, var(--scheduler-cyan-glow), transparent 35%),
+    var(--scheduler-bg);
+}
+

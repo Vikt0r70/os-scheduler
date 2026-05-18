@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+*.tsbuildinfo
+
+# OS / Editor
+.DS_Store
+*.log
+
+# Project internals
+.omo/
+OS Project.pdf
