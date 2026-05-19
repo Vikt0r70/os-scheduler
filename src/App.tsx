@@ -164,14 +164,14 @@ export default function App() {
           </motion.button>
         </section>
 
-        {/* Single Column Layout */}
-        <div className="flex flex-col gap-4">
-          {/* Algorithm Card — Full Width at Top */}
+        {/* Top Row: Algorithm + Process Table side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start mb-4">
+          {/* Algorithm Card — Left */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg hover-card"
+            className="lg:col-span-5 bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg hover-card"
           >
             <div className="p-6">
               {/* Algorithm Tabs */}
@@ -283,7 +283,7 @@ export default function App() {
                     className="w-4 h-4 rounded border-outline-variant bg-surface text-secondary-fixed-dim focus:ring-secondary-fixed-dim cursor-pointer"
                   />
                   <span className="font-mono text-xs text-on-surface-variant group-hover:text-on-surface transition-colors">
-                    Step-by-Step Mode
+                    Step-by-Step
                   </span>
                 </label>
                 <div className="flex gap-2">
@@ -338,11 +338,12 @@ export default function App() {
             </div>
           </motion.div>
 
-          {/* Process Table */}
+          {/* Process Table — Right */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
+            className="lg:col-span-7"
           >
             <ProcessInput
               processes={processes}
@@ -352,43 +353,44 @@ export default function App() {
               onChange={handleProcessChange}
             />
           </motion.div>
-
-          {/* Gantt Chart — Full Width */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedResult.algorithm + simState + currentStep}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.25 }}
-            >
-              <GanttChart
-                result={selectedResult}
-                simState={simState}
-                stepMode={stepMode}
-                currentStep={currentStep}
-              />
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Metrics Table — Full Width */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={selectedResult.algorithm + simState + currentStep + '-metrics'}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.25, delay: 0.1 }}
-            >
-              <MetricsTable
-                result={selectedResult}
-                simState={simState}
-                stepMode={stepMode}
-                currentStep={currentStep}
-              />
-            </motion.div>
-          </AnimatePresence>
         </div>
+
+        {/* Gantt Chart — Full Width */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selectedResult.algorithm + simState + currentStep}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25 }}
+            className="mb-4"
+          >
+            <GanttChart
+              result={selectedResult}
+              simState={simState}
+              stepMode={stepMode}
+              currentStep={currentStep}
+            />
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Metrics Table — Full Width */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selectedResult.algorithm + simState + currentStep + '-metrics'}
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.25, delay: 0.1 }}
+          >
+            <MetricsTable
+              result={selectedResult}
+              simState={simState}
+              stepMode={stepMode}
+              currentStep={currentStep}
+            />
+          </motion.div>
+        </AnimatePresence>
 
         {/* Comparison Modal */}
         <AnimatePresence>
