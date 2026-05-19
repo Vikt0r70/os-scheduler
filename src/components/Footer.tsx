@@ -1,26 +1,26 @@
+import { GitHubIcon } from './Icons';
+
 const githubUrl = 'https://github.com/Vikt0r70/os-scheduler';
 
-export function Footer() {
+export default function Footer() {
   return (
-    <footer className="mx-auto w-full max-w-5xl px-6 py-8 text-slate-300">
-      <div className="flex flex-col gap-4 rounded-3xl border border-scheduler-border bg-scheduler-surface/90 px-6 py-5 shadow-2xl shadow-cyan-950/30 backdrop-blur-xl sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm leading-6">
-          <span className="text-slate-400">© 2026 OS Scheduler.</span>{' '}
-          <span className="font-medium text-slate-100">Made with ❤️</span>
-        </p>
-
-        <a
-          className="inline-flex min-h-11 items-center justify-center rounded-full border border-cyan-400/30 bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-scheduler-accent transition-colors duration-200 hover:border-cyan-300/60 hover:bg-cyan-300/15 hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-300"
-          href={githubUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Open the OS Scheduler GitHub repository"
-        >
-          GitHub repository
-        </a>
+    <footer className="bg-surface-container-lowest border-t border-outline-variant mt-auto animate-fade-in">
+      <div className="w-full py-8 px-4 md:px-8 flex flex-col md:flex-row justify-between items-center max-w-[1440px] mx-auto gap-4 text-on-surface-variant text-sm">
+        <div className="font-mono text-xs font-bold uppercase tracking-wider">
+          © 2026 OS Scheduler. Built for Technical Education.
+        </div>
+        <div className="flex gap-6 font-mono text-xs">
+          <a
+            href={githubUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary transition-all hover:scale-105 duration-200 flex items-center gap-1.5"
+          >
+            <GitHubIcon />
+            GitHub
+          </a>
+        </div>
       </div>
     </footer>
   );
 }
-
-export default Footer;

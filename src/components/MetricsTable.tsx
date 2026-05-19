@@ -2,9 +2,11 @@ import { useMemo } from 'react';
 
 import type { AlgorithmResult, Metrics } from '../types';
 import { formatAverage } from '../utils';
+import { AnalyticsIcon } from './Icons';
 
 export interface MetricsTableProps {
   result: AlgorithmResult;
+  hasStarted: boolean;
 }
 
 interface MetricsRow {
@@ -27,95 +29,101 @@ function getMetricsRows(processMetrics: AlgorithmResult['processMetrics']): Metr
   }));
 }
 
-export function MetricsTable({ result }: MetricsTableProps) {
+export default function MetricsTable({ result, hasStarted }: MetricsTableProps) {
   const rows = useMemo(() => getMetricsRows(result.processMetrics), [result.processMetrics]);
   const hasMetrics = rows.length > 0;
 
   return (
-    <section className="glass-panel space-y-6 rounded-3xl p-6" aria-labelledby="metrics-table-title">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.4em] text-scheduler-accent/80">Performance Ledger</p>
-          <div>
-            <h2 id="metrics-table-title" className="text-2xl font-semibold tracking-tight text-scheduler-ink">
-              Metrics table
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-scheduler-muted">
-              Per-process completion, turnaround, and waiting times with derived arrival and burst values.
-            </p>
-          </div>
-        </div>
-
-        <span className="inline-flex w-fit items-center rounded-full border border-scheduler-border bg-scheduler-panel/80 px-4 py-2 text-sm font-medium text-scheduler-muted">
-          {rows.length} {rows.length === 1 ? 'process' : 'processes'}
-        </span>
+    <div className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg hover-card">
+      <div className="px-6 py-4 border-b border-outline-variant bg-surface-container-highest">
+        <h2 className="font-display text-xl font-semibold">Performance Metrics</h2>
       </div>
 
-      {hasMetrics ? (
-        <div className="glass-card overflow-hidden rounded-3xl">
-          <div className="overflow-x-auto" role="region" aria-label="Scrollable process metrics table">
+      <div className="p-6">
+        {!hasStarted || !hasMetrics ? (
+          <div className="flex-1 flex items-center justify-center bg-surface-dim/30 rounded-xl min-h-[160px]">
+            <div className="text-center group">
+              <AnalyticsIcon className="w-12 h-12 text-outline-variant mx-auto mb-2 group-hover:rotate-12 transition-transform duration-500" />
+              <p className="font-mono text-sm text-on-surface-variant">
+                {hasStarted ? 'Awaiting simulation' : 'Awaiting simulation'}
+              </p>
+              <p className="text-sm text-outline mt-1">
+                {hasStarted ? 'Metrics populate automatically' : "Click 'Start' to generate metrics"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="overflow-x-auto custom-scrollbar rounded-xl border border-outline-variant">
             <table className="min-w-full border-collapse text-left text-sm">
               <caption className="sr-only">
                 Scheduler metrics by process. Priority is unavailable in the current algorithm result and is shown as N/A.
               </caption>
-              <thead className="border-b border-scheduler-border bg-scheduler-bg/40 text-xs uppercase tracking-[0.3em] text-scheduler-muted">
+              <thead className="border-b border-outline-variant bg-surface-dim/50">
                 <tr>
-                  <th className="px-4 py-4 font-semibold" scope="col">Process ID</th>
-                  <th className="px-4 py-4 font-semibold" scope="col">Arrival Time</th>
-                  <th className="px-4 py-4 font-semibold" scope="col">Burst Time</th>
-                  <th className="px-4 py-4 font-semibold" scope="col">Priority</th>
-                  <th className="px-4 py-4 font-semibold" scope="col">CT</th>
-                  <th className="px-4 py-4 font-semibold" scope="col">TAT</th>
-                  <th className="px-4 py-4 font-semibold" scope="col">WT</th>
+                  <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold" scope="col">
+                    Process
+                  </th>
+                  <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold text-center" scope="col">
+                    Arrival
+                  </th>
+                  <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold text-center" scope="col">
+                    Burst
+                  </th>
+                  <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold text-center" scope="col">
+                    CT
+                  </th>
+                  <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold text-center" scope="col">
+                    TAT
+                  </th>
+                  <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold text-center" scope="col">
+                    WT
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-scheduler-border text-scheduler-ink">
+              <tbody className="divide-y divide-outline-variant/50">
                 {rows.map((row) => (
-                  <tr key={row.processId} className="bg-scheduler-panel/30">
-                    <th className="px-4 py-4 font-semibold text-scheduler-accent" scope="row">
+                  <tr key={row.processId} className="bg-surface-container-low/50 hover:bg-surface-variant/20 transition-colors">
+                    <th className="px-4 py-3 font-mono font-semibold text-primary" scope="row">
                       P{row.processId}
                     </th>
-                    <td className="px-4 py-4 tabular-nums text-scheduler-muted">{formatMetric(row.arrivalTime)}</td>
-                    <td className="px-4 py-4 tabular-nums text-scheduler-muted">{formatMetric(row.burstTime)}</td>
-                    <td className="px-4 py-4 text-scheduler-muted">N/A</td>
-                    <td className="px-4 py-4 tabular-nums font-semibold text-scheduler-ink">
+                    <td className="px-4 py-3 font-mono tabular-nums text-on-surface-variant text-center">
+                      {formatMetric(row.arrivalTime)}
+                    </td>
+                    <td className="px-4 py-3 font-mono tabular-nums text-on-surface-variant text-center">
+                      {formatMetric(row.burstTime)}
+                    </td>
+                    <td className="px-4 py-3 font-mono tabular-nums font-semibold text-on-surface text-center">
                       {formatMetric(row.metrics.completionTime)}
                     </td>
-                    <td className="px-4 py-4 tabular-nums font-semibold text-scheduler-ink">
+                    <td className="px-4 py-3 font-mono tabular-nums font-semibold text-on-surface text-center">
                       {formatMetric(row.metrics.turnaroundTime)}
                     </td>
-                    <td className="px-4 py-4 tabular-nums font-semibold text-scheduler-ink">
+                    <td className="px-4 py-3 font-mono tabular-nums font-semibold text-on-surface text-center">
                       {formatMetric(row.metrics.waitingTime)}
                     </td>
                   </tr>
                 ))}
               </tbody>
-              <tfoot className="border-t border-scheduler-accent/30 bg-scheduler-accent/10 text-scheduler-accent">
+              <tfoot className="border-t border-primary/30 bg-primary/10">
                 <tr>
-                  <th className="px-4 py-4 font-semibold" colSpan={4} scope="row">
+                  <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-primary font-semibold" colSpan={3} scope="row">
                     Averages
                   </th>
-                  <td className="px-4 py-4 tabular-nums font-semibold">
+                  <td className="px-4 py-3 font-mono tabular-nums font-semibold text-primary text-center">
                     {formatMetric(result.averages.completionTime)}
                   </td>
-                  <td className="px-4 py-4 tabular-nums font-semibold">
+                  <td className="px-4 py-3 font-mono tabular-nums font-semibold text-primary text-center">
                     {formatMetric(result.averages.turnaroundTime)}
                   </td>
-                  <td className="px-4 py-4 tabular-nums font-semibold">
+                  <td className="px-4 py-3 font-mono tabular-nums font-semibold text-primary text-center">
                     {formatMetric(result.averages.waitingTime)}
                   </td>
                 </tr>
               </tfoot>
             </table>
           </div>
-        </div>
-      ) : (
-        <div className="rounded-3xl border border-dashed border-scheduler-border bg-scheduler-panel/40 px-5 py-8 text-center text-sm text-scheduler-muted">
-          Run a scheduling algorithm to generate process metrics.
-        </div>
-      )}
-    </section>
+        )}
+      </div>
+    </div>
   );
 }
-
-export default MetricsTable;

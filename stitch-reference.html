@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>CPU Scheduling Simulator</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@500;600&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#4ddcc6",
+                        "tertiary-fixed-dim": "#ffafd3",
+                        "surface-variant": "#333441",
+                        "on-error": "#690005",
+                        "surface-dim": "#11121f",
+                        "outline": "#859490",
+                        "on-surface-variant": "#bbcac5",
+                        "inverse-on-surface": "#2e2f3d",
+                        "on-secondary-fixed": "#21005e",
+                        "inverse-primary": "#006b5e",
+                        "error": "#ffb4ab",
+                        "on-tertiary-fixed": "#3d0026",
+                        "primary": "#b5fff0",
+                        "surface-bright": "#373846",
+                        "secondary-fixed-dim": "#cebdff",
+                        "on-surface": "#e2e1f3",
+                        "secondary": "#cebdff",
+                        "surface-container-highest": "#333441",
+                        "surface-container": "#1e1f2b",
+                        "on-primary-fixed": "#00201b",
+                        "on-tertiary-fixed-variant": "#85145a",
+                        "error-container": "#93000a",
+                        "background": "#11121f",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-high": "#282936",
+                        "on-background": "#e2e1f3",
+                        "on-secondary": "#381385",
+                        "on-primary-fixed-variant": "#005047",
+                        "primary-container": "#5eead4",
+                        "on-secondary-fixed-variant": "#4f319c",
+                        "surface-container-low": "#191b27",
+                        "outline-variant": "#3c4946",
+                        "on-secondary-container": "#bea8ff",
+                        "surface-container-lowest": "#0c0d19",
+                        "tertiary-container": "#ffc4dd",
+                        "on-tertiary": "#620040",
+                        "on-primary": "#003730",
+                        "on-tertiary-container": "#a02d70",
+                        "tertiary": "#ffecf2",
+                        "on-primary-container": "#00675b",
+                        "surface": "#11121f",
+                        "secondary-container": "#4f319c",
+                        "surface-tint": "#4ddcc6",
+                        "inverse-surface": "#e2e1f3",
+                        "primary-fixed": "#6ef9e2",
+                        "secondary-fixed": "#e8ddff",
+                        "tertiary-fixed": "#ffd8e7"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-max": "1440px",
+                        "gutter": "16px",
+                        "margin-desktop": "32px",
+                        "margin-mobile": "16px",
+                        "unit": "4px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Inter"],
+                        "code-md": ["JetBrains Mono"],
+                        "headline-lg": ["Space Grotesk"],
+                        "display-lg": ["Space Grotesk"],
+                        "label-sm": ["JetBrains Mono"],
+                        "body-lg": ["Inter"],
+                        "headline-md": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "code-md": ["14px", { "lineHeight": "20px", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #3c4946;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #859490;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col">
+<main class="flex-grow max-w-container-max mx-auto w-full px-margin-mobile md:px-margin-desktop pb-12">
+<!-- Hero Section -->
+<section class="py-[80px] flex flex-col items-center text-center max-w-3xl mx-auto">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-outline-variant bg-surface-container-low mb-6">
+<span class="w-2 h-2 rounded-full bg-primary-fixed-dim"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">OPERATING SYSTEMS SIMULATOR</span>
+</div>
+<h1 class="font-display-lg text-display-lg mb-6 bg-gradient-to-r from-primary-fixed-dim via-secondary-fixed-dim to-tertiary-fixed-dim bg-clip-text text-transparent">
+                CPU Scheduling Simulator
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mb-8 max-w-2xl">
+                Visualize and analyze fundamental operating system scheduling algorithms including FCFS, SJF, Round Robin, and Priority Scheduling in real-time.
+            </p>
+<button class="bg-primary text-on-primary font-code-md text-code-md px-6 py-3 rounded-lg flex items-center gap-2 hover:bg-primary-fixed hover:scale-105 transition-all shadow-[0_4px_20px_rgba(77,220,198,0.2)]">
+<span class="material-symbols-outlined" data-icon="bar_chart">bar_chart</span>
+                Compare All Algorithms
+            </button>
+</section>
+<!-- Workspace Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- Left Column (Controls & Input) -->
+<div class="lg:col-span-5 flex flex-col gap-gutter">
+<!-- Process Table Card -->
+<div class="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg">
+<div class="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-highest">
+<h2 class="font-headline-md text-headline-md">Process Table</h2>
+<button class="text-primary hover:text-primary-fixed transition-colors flex items-center gap-1 font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span>
+                            Add Process
+                        </button>
+</div>
+<div class="p-6 overflow-x-auto custom-scrollbar">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr>
+<th class="font-label-sm text-label-sm text-on-surface-variant pb-3 font-normal border-b border-outline-variant">PID</th>
+<th class="font-label-sm text-label-sm text-on-surface-variant pb-3 font-normal border-b border-outline-variant">Arrival</th>
+<th class="font-label-sm text-label-sm text-on-surface-variant pb-3 font-normal border-b border-outline-variant">Burst</th>
+<th class="font-label-sm text-label-sm text-on-surface-variant pb-3 font-normal border-b border-outline-variant">Priority</th>
+<th class="font-label-sm text-label-sm text-on-surface-variant pb-3 font-normal border-b border-outline-variant text-right">Action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-outline-variant/50 hover:bg-surface-variant/30 transition-colors">
+<td class="py-3">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-primary-fixed-dim shadow-[0_0_8px_rgba(77,220,198,0.4)]"></span>
+<span class="font-code-md text-code-md">P1</span>
+</div>
+</td>
+<td class="py-3"><input class="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-code-md text-code-md focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface" type="number" value="0"/></td>
+<td class="py-3"><input class="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-code-md text-code-md focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface" type="number" value="5"/></td>
+<td class="py-3"><input class="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-code-md text-code-md focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface" type="number" value="2"/></td>
+<td class="py-3 text-right">
+<button class="text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined text-[18px]" data-icon="close">close</span></button>
+</td>
+</tr>
+<tr class="border-b border-outline-variant/50 hover:bg-surface-variant/30 transition-colors">
+<td class="py-3">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-secondary-fixed-dim shadow-[0_0_8px_rgba(206,189,255,0.4)]"></span>
+<span class="font-code-md text-code-md">P2</span>
+</div>
+</td>
+<td class="py-3"><input class="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-code-md text-code-md focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface" type="number" value="2"/></td>
+<td class="py-3"><input class="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-code-md text-code-md focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface" type="number" value="3"/></td>
+<td class="py-3"><input class="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-code-md text-code-md focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface" type="number" value="1"/></td>
+<td class="py-3 text-right">
+<button class="text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined text-[18px]" data-icon="close">close</span></button>
+</td>
+</tr>
+<tr class="hover:bg-surface-variant/30 transition-colors">
+<td class="py-3">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary-fixed-dim shadow-[0_0_8px_rgba(255,175,211,0.4)]"></span>
+<span class="font-code-md text-code-md">P3</span>
+</div>
+</td>
+<td class="py-3"><input class="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-code-md text-code-md focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface" type="number" value="4"/></td>
+<td class="py-3"><input class="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-code-md text-code-md focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface" type="number" value="1"/></td>
+<td class="py-3"><input class="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-code-md text-code-md focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface" type="number" value="3"/></td>
+<td class="py-3 text-right">
+<button class="text-on-surface-variant hover:text-error transition-colors"><span class="material-symbols-outlined text-[18px]" data-icon="close">close</span></button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<!-- Algorithm Card -->
+<div class="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg">
+<div class="p-6">
+<div class="flex flex-wrap gap-2 mb-6">
+<button class="px-4 py-1.5 rounded-full bg-primary/20 text-primary border border-primary/30 font-label-sm text-label-sm transition-colors">FCFS</button>
+<button class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant hover:border-outline hover:text-on-surface font-label-sm text-label-sm transition-colors">SJF</button>
+<button class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant hover:border-outline hover:text-on-surface font-label-sm text-label-sm transition-colors">RR</button>
+<button class="px-4 py-1.5 rounded-full bg-surface text-on-surface-variant border border-outline-variant hover:border-outline hover:text-on-surface font-label-sm text-label-sm transition-colors">PRI</button>
+</div>
+<div class="mb-6">
+<h3 class="font-code-md text-code-md text-on-surface mb-2">First Come First Serve (FCFS)</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mb-4 text-sm">Simplest scheduling algorithm. Processes are assigned the CPU in the order they request it. Non-preemptive.</p>
+<div class="flex gap-4 text-sm">
+<div class="flex-1 border-l-2 border-primary-fixed-dim pl-3">
+<span class="font-label-sm text-label-sm text-on-surface-variant block mb-1">PROS</span>
+<span class="text-on-surface">Simple to implement, no starvation.</span>
+</div>
+<div class="flex-1 border-l-2 border-error pl-3">
+<span class="font-label-sm text-label-sm text-on-surface-variant block mb-1">CONS</span>
+<span class="text-on-surface">Convoy effect, poor response time.</span>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between border-t border-outline-variant pt-6 mt-6">
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="form-checkbox bg-surface border-outline-variant text-secondary-fixed-dim focus:ring-secondary-fixed-dim rounded" type="checkbox"/>
+<span class="font-code-md text-code-md text-on-surface-variant">Step-by-Step Mode</span>
+</label>
+<div class="flex gap-2">
+<button class="text-on-surface-variant hover:text-on-surface px-3 py-2 rounded border border-outline-variant hover:border-outline transition-colors"><span class="material-symbols-outlined text-[20px]" data-icon="restart_alt">restart_alt</span></button>
+<button class="text-on-surface-variant hover:text-on-surface px-3 py-2 rounded border border-outline-variant hover:border-outline transition-colors"><span class="material-symbols-outlined text-[20px]" data-icon="skip_next">skip_next</span></button>
+<button class="bg-primary text-on-primary px-4 py-2 rounded font-code-md text-code-md hover:bg-primary-fixed transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[20px]" data-icon="play_arrow">play_arrow</span> Start
+                                </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column (Visualization) -->
+<div class="lg:col-span-7 flex flex-col gap-gutter h-full">
+<!-- Gantt Chart Card -->
+<div class="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg flex flex-col flex-1 min-h-[300px]">
+<div class="px-6 py-4 border-b border-outline-variant bg-surface-container-highest">
+<h2 class="font-headline-md text-headline-md">Gantt Chart</h2>
+</div>
+<div class="flex-1 p-6 flex items-center justify-center bg-surface-dim/30">
+<div class="text-center">
+<span class="material-symbols-outlined text-6xl text-outline-variant mb-4 block" data-icon="bar_chart">bar_chart</span>
+<p class="font-code-md text-code-md text-on-surface-variant">No simulation data</p>
+<p class="font-body-md text-body-md text-outline text-sm mt-1">Configure processes and click Start</p>
+</div>
+</div>
+</div>
+<!-- Performance Metrics Card -->
+<div class="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg flex flex-col flex-1 min-h-[250px]">
+<div class="px-6 py-4 border-b border-outline-variant bg-surface-container-highest">
+<h2 class="font-headline-md text-headline-md">Performance Metrics</h2>
+</div>
+<div class="flex-1 p-6 flex items-center justify-center bg-surface-dim/30">
+<div class="text-center">
+<span class="material-symbols-outlined text-4xl text-outline-variant mb-2 block" data-icon="analytics">analytics</span>
+<p class="font-code-md text-code-md text-on-surface-variant">Awaiting simulation</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest border-t border-outline-variant dark:border-outline-variant mt-auto">
+<div class="w-full py-8 px-margin-desktop flex flex-col md:flex-row justify-between items-center max-w-container-max mx-auto gap-gutter text-on-surface-variant dark:text-on-surface-variant font-body-md text-body-md">
+<div class="font-label-sm text-label-sm font-bold">
+                © 2024 OS Simulator. Built for Technical Education.
+            </div>
+<div class="flex gap-6 font-label-sm text-label-sm">
+<a class="hover:text-primary dark:hover:text-primary-fixed-dim underline underline-offset-4 transition-opacity duration-200" href="#">GitHub Repository</a>
+<a class="hover:text-primary dark:hover:text-primary-fixed-dim underline underline-offset-4 transition-opacity duration-200" href="#">Documentation</a>
+<a class="hover:text-primary dark:hover:text-primary-fixed-dim underline underline-offset-4 transition-opacity duration-200" href="#">License</a>
+<a class="hover:text-primary dark:hover:text-primary-fixed-dim underline underline-offset-4 transition-opacity duration-200" href="#">Contact</a>
+</div>
+</div>
+</footer>
+</body>
+</html>

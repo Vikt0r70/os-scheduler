@@ -1,7 +1,9 @@
 import { type FormEvent, useMemo, useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 import type { Process } from '../types';
+import { getProcessColor } from '../utils/colors';
+import { AddIcon, CloseIcon } from './Icons';
 
 const MAX_PROCESSES = 20;
 
@@ -73,6 +75,7 @@ export default function ProcessInput({
   const [form, setForm] = useState<ProcessFormState>(emptyForm);
   const [errors, setErrors] = useState<ProcessFormErrors>({});
   const [editingProcessId, setEditingProcessId] = useState<Process['id'] | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
 
   const isEditing = editingProcessId !== null;
   const processCountLabel = useMemo(
@@ -81,19 +84,19 @@ export default function ProcessInput({
   );
 
   function updateField(field: keyof ProcessFormState, value: string) {
-    setForm((currentForm) => ({ ...currentForm, [field]: value }));
-    setErrors((currentErrors) => ({ ...currentErrors, [field]: undefined, form: undefined }));
+    setForm((current) => ({ ...current, [field]: value }));
+    setErrors((current) => ({ ...current, [field]: undefined, form: undefined }));
   }
 
   function resetForm() {
     setForm(emptyForm);
     setErrors({});
     setEditingProcessId(null);
+    setShowAddForm(false);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
     const parsed = parseProcessForm(form);
 
     if (Object.keys(parsed.errors).length > 0) {
@@ -101,9 +104,7 @@ export default function ProcessInput({
       return;
     }
 
-    if (!parsed.process) {
-      return;
-    }
+    if (!parsed.process) return;
 
     if (!isEditing && processes.length >= MAX_PROCESSES) {
       setErrors({ form: 'You can add up to 20 processes.' });
@@ -119,209 +120,224 @@ export default function ProcessInput({
     resetForm();
   }
 
-  function handleEdit(process: Process) {
-    setForm({
-      name: process.name,
-      arrivalTime: String(process.arrivalTime),
-      burstTime: String(process.burstTime),
-      priority: String(process.priority),
-    });
-    setErrors({});
-    setEditingProcessId(process.id);
+  function handleInlineUpdate(process: Process, field: keyof Process, value: string) {
+    const numValue = Number(value);
+    if (field === 'name') {
+      onUpdate({ ...process, name: value });
+    } else if (field === 'arrivalTime') {
+      if (value === '' || numValue < 0) return;
+      onUpdate({ ...process, arrivalTime: numValue });
+    } else if (field === 'burstTime') {
+      if (value === '' || numValue < 1) return;
+      onUpdate({ ...process, burstTime: numValue });
+    } else if (field === 'priority') {
+      if (value === '' || !Number.isInteger(numValue)) return;
+      onUpdate({ ...process, priority: numValue });
+    }
   }
 
   return (
-    <section className="glass-panel space-y-6 rounded-3xl p-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-2">
-          <p className="text-xs uppercase tracking-[0.4em] text-scheduler-accent/80">Process Lab</p>
-          <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-scheduler-ink">Process input</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-scheduler-muted">
-              Add CPU scheduling processes now; algorithm wiring can consume this controlled list later.
-            </p>
-          </div>
-        </div>
-        <span className="inline-flex w-fit items-center rounded-full border border-scheduler-accent/30 bg-scheduler-accent/10 px-4 py-2 text-sm font-medium text-scheduler-accent">
-          {processCountLabel}
-        </span>
+    <div className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg hover-card">
+      <div className="px-6 py-4 border-b border-outline-variant flex justify-between items-center bg-surface-container-highest">
+        <h2 className="font-display text-xl font-semibold">Process Table</h2>
+        <button
+          type="button"
+          onClick={() => setShowAddForm(!showAddForm)}
+          disabled={processes.length >= MAX_PROCESSES}
+          className="text-primary hover:text-primary-fixed hover:bg-primary/10 px-2 py-1.5 rounded transition-all flex items-center gap-1 font-mono text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+        >
+          <AddIcon />
+          Add Process
+        </button>
       </div>
 
-      <form className="space-y-5" onSubmit={handleSubmit} noValidate>
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <label className="space-y-2 text-sm font-medium text-scheduler-ink" htmlFor="process-name">
-            <span>Name</span>
-            <input
-              id="process-name"
-              className="w-full rounded-2xl border border-scheduler-border bg-scheduler-bg/70 px-4 py-3 text-scheduler-ink outline-none transition-colors placeholder:text-scheduler-muted/60 focus:border-scheduler-accent focus:ring-2 focus:ring-scheduler-accent/20"
-              value={form.name}
-              onChange={(event) => updateField('name', event.target.value)}
-              aria-invalid={Boolean(errors.name)}
-              aria-describedby={errors.name ? 'process-name-error' : undefined}
-              placeholder="P1"
-            />
-            {errors.name ? (
-              <span id="process-name-error" className="block text-xs font-medium text-scheduler-coral-soft">
-                {errors.name}
-              </span>
-            ) : null}
-          </label>
-
-          <label className="space-y-2 text-sm font-medium text-scheduler-ink" htmlFor="process-arrival-time">
-            <span>Arrival Time</span>
-            <input
-              id="process-arrival-time"
-              className="w-full rounded-2xl border border-scheduler-border bg-scheduler-bg/70 px-4 py-3 text-scheduler-ink outline-none transition-colors placeholder:text-scheduler-muted/60 focus:border-scheduler-accent focus:ring-2 focus:ring-scheduler-accent/20"
-              type="number"
-              min="0"
-              inputMode="decimal"
-              value={form.arrivalTime}
-              onChange={(event) => updateField('arrivalTime', event.target.value)}
-              aria-invalid={Boolean(errors.arrivalTime)}
-              aria-describedby={errors.arrivalTime ? 'process-arrival-time-error' : undefined}
-              placeholder="0"
-            />
-            {errors.arrivalTime ? (
-              <span id="process-arrival-time-error" className="block text-xs font-medium text-scheduler-coral-soft">
-                {errors.arrivalTime}
-              </span>
-            ) : null}
-          </label>
-
-          <label className="space-y-2 text-sm font-medium text-scheduler-ink" htmlFor="process-burst-time">
-            <span>Burst Time</span>
-            <input
-              id="process-burst-time"
-              className="w-full rounded-2xl border border-scheduler-border bg-scheduler-bg/70 px-4 py-3 text-scheduler-ink outline-none transition-colors placeholder:text-scheduler-muted/60 focus:border-scheduler-accent focus:ring-2 focus:ring-scheduler-accent/20"
-              type="number"
-              min="1"
-              inputMode="decimal"
-              value={form.burstTime}
-              onChange={(event) => updateField('burstTime', event.target.value)}
-              aria-invalid={Boolean(errors.burstTime)}
-              aria-describedby={errors.burstTime ? 'process-burst-time-error' : undefined}
-              placeholder="5"
-            />
-            {errors.burstTime ? (
-              <span id="process-burst-time-error" className="block text-xs font-medium text-scheduler-coral-soft">
-                {errors.burstTime}
-              </span>
-            ) : null}
-          </label>
-
-          <label className="space-y-2 text-sm font-medium text-scheduler-ink" htmlFor="process-priority">
-            <span>Priority</span>
-            <input
-              id="process-priority"
-              className="w-full rounded-2xl border border-scheduler-border bg-scheduler-bg/70 px-4 py-3 text-scheduler-ink outline-none transition-colors placeholder:text-scheduler-muted/60 focus:border-scheduler-accent focus:ring-2 focus:ring-scheduler-accent/20"
-              type="number"
-              step="1"
-              inputMode="numeric"
-              value={form.priority}
-              onChange={(event) => updateField('priority', event.target.value)}
-              aria-invalid={Boolean(errors.priority)}
-              aria-describedby={errors.priority ? 'process-priority-error' : undefined}
-              placeholder="1"
-            />
-            {errors.priority ? (
-              <span id="process-priority-error" className="block text-xs font-medium text-scheduler-coral-soft">
-                {errors.priority}
-              </span>
-            ) : null}
-          </label>
-        </div>
-
-        {errors.form ? (
-          <p className="rounded-2xl border border-scheduler-coral/30 bg-scheduler-coral/10 px-4 py-3 text-sm font-medium text-scheduler-coral-soft" role="alert">
-            {errors.form}
-          </p>
-        ) : null}
-
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <button
-            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-scheduler-accent/40 bg-scheduler-accent px-5 py-3 text-sm font-semibold text-scheduler-bg transition-colors hover:bg-scheduler-cyan focus:outline-none focus:ring-2 focus:ring-scheduler-accent focus:ring-offset-2 focus:ring-offset-scheduler-bg"
-            type="submit"
-          >
-            {isEditing ? 'Save Process' : 'Add Process'}
-          </button>
-          {isEditing ? (
-            <button
-              className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-scheduler-border bg-scheduler-panel/70 px-5 py-3 text-sm font-semibold text-scheduler-ink transition-colors hover:border-scheduler-accent/40 hover:bg-scheduler-panel focus:outline-none focus:ring-2 focus:ring-scheduler-accent focus:ring-offset-2 focus:ring-offset-scheduler-bg"
-              type="button"
-              onClick={resetForm}
-            >
-              Cancel Edit
-            </button>
-          ) : null}
-        </div>
-      </form>
-
-      <div className="space-y-3" aria-live="polite">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-lg font-semibold text-scheduler-ink">Current processes</h3>
-          <p className="text-sm text-scheduler-muted">Name, arrival, burst, and priority</p>
-        </div>
-
-        {processes.length > 0 ? (
-          <div className="grid gap-3">
-            {processes.map((process) => (
-              <motion.article
-                key={process.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="glass-card rounded-3xl p-4 transition-colors hover:border-scheduler-accent/30"
-              >
-                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                  <div className="space-y-3">
-                    <div>
-                      <p className="text-xs uppercase tracking-[0.3em] text-scheduler-accent/70">Process {process.id}</p>
-                      <h4 className="mt-1 text-xl font-semibold text-scheduler-ink">{process.name}</h4>
-                    </div>
-                    <dl className="grid gap-3 text-sm sm:grid-cols-3">
-                      <div className="rounded-2xl border border-scheduler-border bg-scheduler-panel/80 px-4 py-3">
-                        <dt className="text-scheduler-muted">Arrival</dt>
-                        <dd className="mt-1 font-semibold text-scheduler-ink">{process.arrivalTime}</dd>
+      <div className="p-6 overflow-x-auto custom-scrollbar">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr>
+              <th className="font-mono text-xs uppercase tracking-[0.1em] text-on-surface-variant pb-3 font-normal border-b border-outline-variant">
+                PID
+              </th>
+              <th className="font-mono text-xs uppercase tracking-[0.1em] text-on-surface-variant pb-3 font-normal border-b border-outline-variant text-center">
+                Arrival
+              </th>
+              <th className="font-mono text-xs uppercase tracking-[0.1em] text-on-surface-variant pb-3 font-normal border-b border-outline-variant text-center">
+                Burst
+              </th>
+              <th className="font-mono text-xs uppercase tracking-[0.1em] text-on-surface-variant pb-3 font-normal border-b border-outline-variant text-center">
+                Priority
+              </th>
+              <th className="font-mono text-xs uppercase tracking-[0.1em] text-on-surface-variant pb-3 font-normal border-b border-outline-variant text-right">
+                Action
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <AnimatePresence>
+              {processes.map((process) => {
+                const color = getProcessColor(process.id);
+                return (
+                  <motion.tr
+                    key={process.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="border-b border-outline-variant/50 hover:bg-surface-variant/30 row-lift"
+                  >
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{
+                            backgroundColor: color,
+                            boxShadow: `0 0 8px ${color}66`,
+                          }}
+                        />
+                        <span className="font-mono text-sm text-on-surface font-medium">
+                          {process.name}
+                        </span>
                       </div>
-                      <div className="rounded-2xl border border-scheduler-border bg-scheduler-panel/80 px-4 py-3">
-                        <dt className="text-scheduler-muted">Burst</dt>
-                        <dd className="mt-1 font-semibold text-scheduler-ink">{process.burstTime}</dd>
-                      </div>
-                      <div className="rounded-2xl border border-scheduler-border bg-scheduler-panel/80 px-4 py-3">
-                        <dt className="text-scheduler-muted">Priority</dt>
-                        <dd className="mt-1 font-semibold text-scheduler-ink">{process.priority}</dd>
-                      </div>
-                    </dl>
-                  </div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <input
+                        type="number"
+                        min={0}
+                        value={process.arrivalTime}
+                        onChange={(e) =>
+                          handleInlineUpdate(process, 'arrivalTime', e.target.value)
+                        }
+                        className="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
+                      />
+                    </td>
+                    <td className="py-3 text-center">
+                      <input
+                        type="number"
+                        min={1}
+                        value={process.burstTime}
+                        onChange={(e) =>
+                          handleInlineUpdate(process, 'burstTime', e.target.value)
+                        }
+                        className="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
+                      />
+                    </td>
+                    <td className="py-3 text-center">
+                      <input
+                        type="number"
+                        value={process.priority}
+                        onChange={(e) =>
+                          handleInlineUpdate(process, 'priority', e.target.value)
+                        }
+                        className="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
+                      />
+                    </td>
+                    <td className="py-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => onRemove(process.id)}
+                        className="text-on-surface-variant hover:text-error hover:bg-error/10 p-1 rounded transition-colors inline-flex cursor-pointer"
+                      >
+                        <CloseIcon />
+                      </button>
+                    </td>
+                  </motion.tr>
+                );
+              })}
+            </AnimatePresence>
 
-                  <div className="flex flex-col gap-2 sm:flex-row lg:flex-col">
-                    <button
-                      className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-scheduler-accent/30 bg-scheduler-accent/10 px-4 py-2 text-sm font-semibold text-scheduler-accent transition-colors hover:bg-scheduler-accent/20 focus:outline-none focus:ring-2 focus:ring-scheduler-accent focus:ring-offset-2 focus:ring-offset-scheduler-bg"
-                      type="button"
-                      onClick={() => handleEdit(process)}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-2xl border border-scheduler-coral/30 bg-scheduler-coral/10 px-4 py-2 text-sm font-semibold text-scheduler-coral-soft transition-colors hover:bg-scheduler-coral/20 focus:outline-none focus:ring-2 focus:ring-scheduler-coral focus:ring-offset-2 focus:ring-offset-scheduler-bg"
-                      type="button"
-                      onClick={() => onRemove(process.id)}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                </div>
-              </motion.article>
-            ))}
-          </div>
-        ) : (
-          <div className="rounded-3xl border border-dashed border-scheduler-border bg-scheduler-panel/40 px-5 py-8 text-center text-sm text-scheduler-muted">
-            No processes yet. Add the first process to prepare the scheduler input set.
+            {/* Add Process Form Row */}
+            <AnimatePresence>
+              {showAddForm && (
+                <motion.tr
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="border-b border-outline-variant/50"
+                >
+                  <td colSpan={5} className="py-3">
+                    <form onSubmit={handleSubmit} className="flex items-center gap-2">
+                      <input
+                        placeholder="Name"
+                        value={form.name}
+                        onChange={(e) => updateField('name', e.target.value)}
+                        className="w-20 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors"
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="0"
+                        value={form.arrivalTime}
+                        onChange={(e) => updateField('arrivalTime', e.target.value)}
+                        className="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
+                      />
+                      <input
+                        type="number"
+                        min={1}
+                        placeholder="5"
+                        value={form.burstTime}
+                        onChange={(e) => updateField('burstTime', e.target.value)}
+                        className="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
+                      />
+                      <input
+                        type="number"
+                        placeholder="1"
+                        value={form.priority}
+                        onChange={(e) => updateField('priority', e.target.value)}
+                        className="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
+                      />
+                      <div className="flex gap-2 ml-auto">
+                        <button
+                          type="button"
+                          onClick={resetForm}
+                          className="text-on-surface-variant hover:text-on-surface px-2 py-1 rounded border border-outline-variant hover:border-outline transition-colors text-sm cursor-pointer"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          className="bg-primary text-on-primary px-3 py-1 rounded font-mono text-xs font-semibold hover:brightness-110 transition-all cursor-pointer"
+                        >
+                          Add
+                        </button>
+                      </div>
+                    </form>
+                    {errors.form && (
+                      <p className="text-error text-xs mt-2">{errors.form}</p>
+                    )}
+                    {errors.name && (
+                      <p className="text-error text-xs mt-1">{errors.name}</p>
+                    )}
+                  </td>
+                </motion.tr>
+              )}
+            </AnimatePresence>
+          </tbody>
+        </table>
+
+        {processes.length === 0 && !showAddForm && (
+          <div className="text-center py-8">
+            <p className="text-on-surface-variant text-sm">
+              No processes yet. Click "Add Process" to get started.
+            </p>
           </div>
         )}
       </div>
-    </section>
+
+      {/* Footer */}
+      <div className="px-6 py-3 border-t border-outline-variant flex items-center justify-between bg-surface-container-high/50">
+        <span className="font-mono text-xs text-on-surface-variant">
+          {processCountLabel}
+        </span>
+        <div className="flex gap-1">
+          {processes.map((p) => (
+            <span
+              key={p.id}
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: getProcessColor(p.id) }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
-
-

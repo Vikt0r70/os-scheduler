@@ -1,10 +1,13 @@
 import { useMemo } from 'react';
+import { motion } from 'motion/react';
 
 import type { AlgorithmResult } from '../types';
 import { formatAverage } from '../utils';
+import { XIcon, CheckCircleIcon } from './Icons';
 
 export interface ComparisonTableProps {
   results: AlgorithmResult[];
+  onClose: () => void;
 }
 
 function getAlgorithmLabel(algorithm: AlgorithmResult['algorithm']) {
@@ -16,7 +19,6 @@ function getAlgorithmLabel(algorithm: AlgorithmResult['algorithm']) {
     priorityNP: 'Priority NP',
     priorityP: 'Priority P',
   };
-
   return labels[algorithm];
 }
 
@@ -24,12 +26,11 @@ function formatMetric(value: number) {
   return formatAverage(value).toFixed(2);
 }
 
-export function ComparisonTable({ results }: ComparisonTableProps) {
+export default function ComparisonTable({ results, onClose }: ComparisonTableProps) {
   const lowestAverages = useMemo(() => {
     if (results.length === 0) {
       return { waitingTime: null, turnaroundTime: null };
     }
-
     return results.reduce(
       (lowest, result) => ({
         waitingTime: Math.min(lowest.waitingTime, result.averages.waitingTime),
@@ -42,75 +43,114 @@ export function ComparisonTable({ results }: ComparisonTableProps) {
     );
   }, [results]);
 
+  const sortedResults = useMemo(() => {
+    return [...results].sort((a, b) => a.averages.waitingTime - b.averages.waitingTime);
+  }, [results]);
+
   return (
-    <section className="glass-panel space-y-6 rounded-3xl p-6" aria-labelledby="comparison-table-title">
-      <div className="space-y-2">
-        <p className="text-xs uppercase tracking-[0.4em] text-scheduler-accent/80">Comparison Ledger</p>
-        <div>
-          <h2 id="comparison-table-title" className="text-2xl font-semibold tracking-tight text-scheduler-ink">
-            Algorithm comparison
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-scheduler-muted">
-            Compare average waiting time and turnaround time across scheduling algorithms.
-          </p>
-        </div>
-      </div>
-
-      {results.length > 0 ? (
-        <div className="glass-card overflow-hidden rounded-3xl">
-          <div className="overflow-x-auto" role="region" aria-label="Scrollable algorithm comparison table">
-            <table className="min-w-full border-collapse text-left text-sm">
-              <thead className="border-b border-scheduler-border bg-scheduler-bg/40 text-xs uppercase tracking-[0.3em] text-scheduler-muted">
-                <tr>
-                  <th className="px-4 py-4 font-semibold" scope="col">
-                    Algorithm
-                  </th>
-                  <th className="px-4 py-4 font-semibold" scope="col">
-                    Avg waiting time
-                  </th>
-                  <th className="px-4 py-4 font-semibold" scope="col">
-                    Avg turnaround time
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-scheduler-border text-scheduler-ink">
-                {results.map((result) => {
-                  const isLowestWaitingTime = result.averages.waitingTime === lowestAverages.waitingTime;
-                  const isLowestTurnaroundTime = result.averages.turnaroundTime === lowestAverages.turnaroundTime;
-
-                  return (
-                    <tr
-                      key={result.algorithm}
-                      className={[
-                        'bg-scheduler-panel/30',
-                        isLowestWaitingTime || isLowestTurnaroundTime ? 'bg-scheduler-accent/20' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                    >
-                      <th className="px-4 py-4 font-semibold text-scheduler-accent" scope="row">
-                        {getAlgorithmLabel(result.algorithm)}
-                      </th>
-                      <td className="px-4 py-4 tabular-nums font-semibold text-scheduler-ink">
-                        {formatMetric(result.averages.waitingTime)}
-                      </td>
-                      <td className="px-4 py-4 tabular-nums font-semibold text-scheduler-ink">
-                        {formatMetric(result.averages.turnaroundTime)}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        transition={{ duration: 0.2 }}
+        className="bg-surface-container border border-outline-variant rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-6 py-4 border-b border-outline-variant bg-surface-container-highest flex items-center justify-between">
+          <div>
+            <h2 className="font-display text-xl font-semibold">Algorithm Comparison</h2>
+            <p className="text-sm text-on-surface-variant mt-1">
+              Sorted by average waiting time (best first)
+            </p>
           </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 p-2 rounded-lg transition-colors cursor-pointer"
+          >
+            <XIcon />
+          </button>
         </div>
-      ) : (
-        <div className="rounded-3xl border border-dashed border-scheduler-border bg-scheduler-panel/40 px-5 py-8 text-center text-sm text-scheduler-muted">
-          Run algorithms to compare average waiting and turnaround times.
+
+        <div className="p-6 overflow-y-auto custom-scrollbar">
+          {results.length > 0 ? (
+            <div className="overflow-x-auto custom-scrollbar rounded-xl border border-outline-variant">
+              <table className="min-w-full border-collapse text-left text-sm">
+                <thead className="border-b border-outline-variant bg-surface-dim/50">
+                  <tr>
+                    <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold" scope="col">
+                      Rank
+                    </th>
+                    <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold" scope="col">
+                      Algorithm
+                    </th>
+                    <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold text-center" scope="col">
+                      Avg Waiting
+                    </th>
+                    <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold text-center" scope="col">
+                      Avg Turnaround
+                    </th>
+                    <th className="px-4 py-3 font-mono text-xs uppercase tracking-wider text-on-surface-variant font-semibold text-center" scope="col">
+                      Best
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-outline-variant/50">
+                  {sortedResults.map((result, index) => {
+                    const isLowestWaiting = result.averages.waitingTime === lowestAverages.waitingTime;
+                    const isLowestTurnaround = result.averages.turnaroundTime === lowestAverages.turnaroundTime;
+                    const isBest = isLowestWaiting || isLowestTurnaround;
+
+                    return (
+                      <tr
+                        key={result.algorithm}
+                        className={[
+                          'bg-surface-container-low/50 hover:bg-surface-variant/20 transition-colors',
+                          isBest ? 'bg-primary/5' : '',
+                        ].join(' ')}
+                      >
+                        <td className="px-4 py-3 font-mono text-sm text-on-surface-variant">
+                          #{index + 1}
+                        </td>
+                        <th className="px-4 py-3 font-mono font-semibold text-primary" scope="row">
+                          {getAlgorithmLabel(result.algorithm)}
+                        </th>
+                        <td className="px-4 py-3 font-mono tabular-nums font-semibold text-on-surface text-center">
+                          {formatMetric(result.averages.waitingTime)}
+                        </td>
+                        <td className="px-4 py-3 font-mono tabular-nums font-semibold text-on-surface text-center">
+                          {formatMetric(result.averages.turnaroundTime)}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          {isBest && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/20 text-primary font-mono text-xs font-semibold border border-primary/30">
+                              <CheckCircleIcon className="w-3 h-3" />
+                              Best
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-on-surface-variant text-sm">
+                Run algorithms to compare their performance.
+              </p>
+            </div>
+          )}
         </div>
-      )}
-    </section>
+      </motion.div>
+    </motion.div>
   );
 }
-
-export default ComparisonTable;

@@ -1,10 +1,10 @@
 @import "tailwindcss";
-@import "./styles/glass.css";
+@import "./styles/theme.css";
 
 :root {
   color-scheme: dark;
-  background: var(--scheduler-bg);
-  font-family: var(--scheduler-font-sans);
+  background: var(--color-background);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
 }
 
 html,
@@ -15,8 +15,54 @@ body,
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at top, var(--scheduler-cyan-glow), transparent 35%),
-    var(--scheduler-bg);
+  background: #11121f;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+/* Font utilities */
+.font-display {
+  font-family: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Shimmer button */
+.shimmer-btn {
+  background: linear-gradient(90deg, #b5fff0 0%, #ffffff 20%, #b5fff0 40%, #b5fff0 100%);
+  background-size: 200% auto;
+  color: #003730;
+}
+
+.shimmer-btn:hover {
+  animation: shimmer 1.5s linear infinite;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-pulse-subtle,
+  .animate-shimmer,
+  .stagger-1,
+  .stagger-2,
+  .stagger-3,
+  .stagger-4,
+  .stagger-5 {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .hover-card,
+  .row-lift {
+    transition: none;
+  }
+
+  .hover-card:hover,
+  .row-lift:hover {
+    transform: none;
+  }
+}
