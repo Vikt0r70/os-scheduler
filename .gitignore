@@ -12,3 +12,24 @@ dist/
 # Project internals
 .omo/
 OS Project.pdf
+
+# Design docs (not needed in repo)
+*.md
+
+# Reference / temp files
+stitch-reference.html
+
+# Environment
+.env
+.env.*
+*.local
+
+# Coverage
+coverage/
+
+# Editor settings
+.idea/
+.vscode/
+
+# Test cache
+__snapshots__/
