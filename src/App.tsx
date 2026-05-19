@@ -52,7 +52,6 @@ export default function App() {
   const maxSteps = selectedResult.ganttBlocks.length;
   const isComplete = stepMode ? currentStep >= maxSteps - 1 : simState === 'complete';
 
-  // Reset simulation when algorithm changes
   useEffect(() => {
     setSimState('idle');
     setCurrentStep(0);
@@ -101,7 +100,6 @@ export default function App() {
     setSimState('running');
     setCurrentStep(0);
     if (!stepMode) {
-      // Auto-complete if not in step mode
       setTimeout(() => setSimState('complete'), 300);
     }
   }, [stepMode]);
@@ -166,224 +164,230 @@ export default function App() {
           </motion.button>
         </section>
 
-        {/* Workspace Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-          {/* Left Column */}
-          <div className="lg:col-span-5 flex flex-col gap-4">
-            {/* Process Table */}
+        {/* Single Column Layout */}
+        <div className="flex flex-col gap-4">
+          {/* Algorithm Card — Full Width at Top */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg hover-card"
+          >
+            <div className="p-6">
+              {/* Algorithm Tabs */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                {algorithmTabs.map((tab) => {
+                  const isActive = tab.id === selectedAlgorithm;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setSelectedAlgorithm(tab.id)}
+                      className={[
+                        'px-4 py-1.5 rounded-full font-mono text-xs font-semibold transition-all active:scale-95 cursor-pointer',
+                        isActive
+                          ? 'bg-primary/20 text-primary border border-primary/30'
+                          : 'bg-surface text-on-surface-variant border border-outline-variant hover:border-outline hover:text-on-surface hover:bg-surface-variant/50',
+                      ].join(' ')}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Algorithm Description */}
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={selectedAlgorithm}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                  className="mb-6"
+                >
+                  <h3 className="font-mono text-sm text-on-surface mb-2">
+                    {algorithmInfo.fullName}
+                  </h3>
+                  <p className="text-sm text-on-surface-variant mb-4 leading-relaxed">
+                    {algorithmInfo.description}
+                  </p>
+                  <div className="flex gap-4 text-sm">
+                    <div className="flex-1 border-l-2 border-primary-fixed-dim pl-3 hover:bg-primary-fixed-dim/5 p-2 rounded-r transition-colors">
+                      <span className="font-mono text-xs uppercase tracking-wider text-on-surface-variant block mb-1">
+                        Pros
+                      </span>
+                      <ul className="space-y-1">
+                        {algorithmInfo.pros.map((pro, i) => (
+                          <li key={i} className="flex items-center gap-1.5 text-on-surface">
+                            <CheckCircleIcon className="text-primary-fixed-dim shrink-0" />
+                            <span>{pro}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="flex-1 border-l-2 border-error pl-3 hover:bg-error/5 p-2 rounded-r transition-colors">
+                      <span className="font-mono text-xs uppercase tracking-wider text-on-surface-variant block mb-1">
+                        Cons
+                      </span>
+                      <ul className="space-y-1">
+                        {algorithmInfo.cons.map((con, i) => (
+                          <li key={i} className="flex items-center gap-1.5 text-on-surface">
+                            <XCircleIcon className="text-error shrink-0" />
+                            <span>{con}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </motion.div>
+              </AnimatePresence>
+
+              {/* Round Robin Quantum */}
+              <AnimatePresence>
+                {selectedAlgorithm === 'roundRobin' && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mb-4 overflow-hidden"
+                  >
+                    <label className="block text-sm font-medium text-on-surface mb-2">
+                      Time Quantum
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={quantum}
+                      onChange={(e) =>
+                        setQuantum(Math.max(1, Number(e.target.value) || 1))
+                      }
+                      className="w-24 bg-surface border border-outline-variant rounded px-3 py-2 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors"
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Controls */}
+              <div className="flex items-center justify-between border-t border-outline-variant pt-6 mt-2">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={stepMode}
+                    onChange={(e) => {
+                      setStepMode(e.target.checked);
+                      setSimState('idle');
+                      setCurrentStep(0);
+                    }}
+                    className="w-4 h-4 rounded border-outline-variant bg-surface text-secondary-fixed-dim focus:ring-secondary-fixed-dim cursor-pointer"
+                  />
+                  <span className="font-mono text-xs text-on-surface-variant group-hover:text-on-surface transition-colors">
+                    Step-by-Step Mode
+                  </span>
+                </label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="text-on-surface-variant hover:text-on-surface px-3 py-2 rounded border border-outline-variant hover:border-outline hover:bg-surface-variant/50 active:scale-95 transition-all cursor-pointer"
+                    title="Reset"
+                  >
+                    <ResetIcon />
+                  </button>
+                  {simState !== 'idle' && stepMode && (
+                    <button
+                      type="button"
+                      onClick={handleStep}
+                      disabled={isComplete}
+                      className="text-on-surface-variant hover:text-on-surface px-3 py-2 rounded border border-outline-variant hover:border-outline hover:bg-surface-variant/50 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                      title="Next Step"
+                    >
+                      <SkipNextIcon />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleStart}
+                    disabled={simState !== 'idle'}
+                    className="bg-primary text-on-primary px-4 py-2 rounded font-mono text-sm font-semibold hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(94,234,212,0.3)] hover:shadow-[0_0_20px_rgba(94,234,212,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <PlayIcon />
+                    {simState === 'idle' ? 'Start' : simState === 'running' ? 'Running...' : 'Complete'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Step Progress */}
+              {simState !== 'idle' && stepMode && maxSteps > 0 && (
+                <div className="mt-4">
+                  <div className="flex items-center justify-between text-xs font-mono text-on-surface-variant mb-1">
+                    <span>Step Progress</span>
+                    <span>{Math.min(currentStep + 1, maxSteps)} / {maxSteps}</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-surface-dim rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-primary rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${((Math.min(currentStep + 1, maxSteps)) / maxSteps) * 100}%` }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Process Table */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
+            <ProcessInput
+              processes={processes}
+              onAdd={handleAdd}
+              onUpdate={handleUpdate}
+              onRemove={handleRemove}
+              onChange={handleProcessChange}
+            />
+          </motion.div>
+
+          {/* Gantt Chart — Full Width */}
+          <AnimatePresence mode="wait">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              key={selectedResult.algorithm + simState + currentStep}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
             >
-              <ProcessInput
-                processes={processes}
-                onAdd={handleAdd}
-                onUpdate={handleUpdate}
-                onRemove={handleRemove}
-                onChange={handleProcessChange}
+              <GanttChart
+                result={selectedResult}
+                simState={simState}
+                stepMode={stepMode}
+                currentStep={currentStep}
               />
             </motion.div>
+          </AnimatePresence>
 
-            {/* Algorithm Card */}
+          {/* Metrics Table — Full Width */}
+          <AnimatePresence mode="wait">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              key={selectedResult.algorithm + simState + currentStep + '-metrics'}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg hover-card"
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25, delay: 0.1 }}
             >
-              <div className="p-6">
-                {/* Algorithm Tabs */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {algorithmTabs.map((tab) => {
-                    const isActive = tab.id === selectedAlgorithm;
-                    return (
-                      <button
-                        key={tab.id}
-                        type="button"
-                        onClick={() => setSelectedAlgorithm(tab.id)}
-                        className={[
-                          'px-4 py-1.5 rounded-full font-mono text-xs font-semibold transition-all active:scale-95 cursor-pointer',
-                          isActive
-                            ? 'bg-primary/20 text-primary border border-primary/30'
-                            : 'bg-surface text-on-surface-variant border border-outline-variant hover:border-outline hover:text-on-surface hover:bg-surface-variant/50',
-                        ].join(' ')}
-                      >
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Algorithm Description */}
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={selectedAlgorithm}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.2 }}
-                    className="mb-6"
-                  >
-                    <h3 className="font-mono text-sm text-on-surface mb-2">
-                      {algorithmInfo.fullName}
-                    </h3>
-                    <p className="text-sm text-on-surface-variant mb-4 leading-relaxed">
-                      {algorithmInfo.description}
-                    </p>
-                    <div className="flex gap-4 text-sm">
-                      <div className="flex-1 border-l-2 border-primary-fixed-dim pl-3 hover:bg-primary-fixed-dim/5 p-2 rounded-r transition-colors">
-                        <span className="font-mono text-xs uppercase tracking-wider text-on-surface-variant block mb-1">
-                          Pros
-                        </span>
-                        <ul className="space-y-1">
-                          {algorithmInfo.pros.map((pro, i) => (
-                            <li key={i} className="flex items-center gap-1.5 text-on-surface">
-                              <CheckCircleIcon className="text-primary-fixed-dim shrink-0" />
-                              <span>{pro}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="flex-1 border-l-2 border-error pl-3 hover:bg-error/5 p-2 rounded-r transition-colors">
-                        <span className="font-mono text-xs uppercase tracking-wider text-on-surface-variant block mb-1">
-                          Cons
-                        </span>
-                        <ul className="space-y-1">
-                          {algorithmInfo.cons.map((con, i) => (
-                            <li key={i} className="flex items-center gap-1.5 text-on-surface">
-                              <XCircleIcon className="text-error shrink-0" />
-                              <span>{con}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-
-                {/* Round Robin Quantum */}
-                <AnimatePresence>
-                  {selectedAlgorithm === 'roundRobin' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="mb-4 overflow-hidden"
-                    >
-                      <label className="block text-sm font-medium text-on-surface mb-2">
-                        Time Quantum
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        step={1}
-                        value={quantum}
-                        onChange={(e) =>
-                          setQuantum(Math.max(1, Number(e.target.value) || 1))
-                        }
-                        className="w-24 bg-surface border border-outline-variant rounded px-3 py-2 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors"
-                      />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Controls */}
-                <div className="flex items-center justify-between border-t border-outline-variant pt-6 mt-2">
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={stepMode}
-                      onChange={(e) => {
-                        setStepMode(e.target.checked);
-                        setSimState('idle');
-                        setCurrentStep(0);
-                      }}
-                      className="w-4 h-4 rounded border-outline-variant bg-surface text-secondary-fixed-dim focus:ring-secondary-fixed-dim cursor-pointer"
-                    />
-                    <span className="font-mono text-xs text-on-surface-variant group-hover:text-on-surface transition-colors">
-                      Step-by-Step Mode
-                    </span>
-                  </label>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={handleReset}
-                      className="text-on-surface-variant hover:text-on-surface px-3 py-2 rounded border border-outline-variant hover:border-outline hover:bg-surface-variant/50 active:scale-95 transition-all cursor-pointer"
-                      title="Reset"
-                    >
-                      <ResetIcon />
-                    </button>
-                    {simState !== 'idle' && stepMode && (
-                      <button
-                        type="button"
-                        onClick={handleStep}
-                        disabled={isComplete}
-                        className="text-on-surface-variant hover:text-on-surface px-3 py-2 rounded border border-outline-variant hover:border-outline hover:bg-surface-variant/50 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                        title="Next Step"
-                      >
-                        <SkipNextIcon />
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleStart}
-                      disabled={simState !== 'idle'}
-                      className="bg-primary text-on-primary px-4 py-2 rounded font-mono text-sm font-semibold hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(94,234,212,0.3)] hover:shadow-[0_0_20px_rgba(94,234,212,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <PlayIcon />
-                      {simState === 'idle' ? 'Start' : simState === 'running' ? 'Running...' : 'Complete'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Step Progress */}
-                {simState !== 'idle' && stepMode && maxSteps > 0 && (
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between text-xs font-mono text-on-surface-variant mb-1">
-                      <span>Step Progress</span>
-                      <span>{Math.min(currentStep + 1, maxSteps)} / {maxSteps}</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-surface-dim rounded-full overflow-hidden">
-                      <motion.div
-                        className="h-full bg-primary rounded-full"
-                        initial={{ width: 0 }}
-                        animate={{ width: `${((Math.min(currentStep + 1, maxSteps)) / maxSteps) * 100}%` }}
-                        transition={{ duration: 0.3 }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
+              <MetricsTable
+                result={selectedResult}
+                simState={simState}
+                stepMode={stepMode}
+                currentStep={currentStep}
+              />
             </motion.div>
-          </div>
-
-          {/* Right Column */}
-          <div className="lg:col-span-7 flex flex-col gap-4">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={selectedResult.algorithm + simState + currentStep}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ duration: 0.25 }}
-                className="flex flex-col gap-4"
-              >
-                <GanttChart
-                  result={selectedResult}
-                  simState={simState}
-                  stepMode={stepMode}
-                  currentStep={currentStep}
-                />
-                <MetricsTable
-                  result={selectedResult}
-                  simState={simState}
-                  stepMode={stepMode}
-                  currentStep={currentStep}
-                />
-              </motion.div>
-            </AnimatePresence>
-          </div>
+          </AnimatePresence>
         </div>
 
         {/* Comparison Modal */}

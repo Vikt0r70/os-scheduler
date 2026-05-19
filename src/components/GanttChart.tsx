@@ -6,9 +6,6 @@ import { formatTime } from '../utils';
 import { getProcessColor } from '../utils/colors';
 import { BarChartIcon } from './Icons';
 
-const TIME_UNIT_WIDTH_REM = 3.25;
-const MIN_SEGMENT_WIDTH_REM = 4.5;
-
 export interface GanttChartProps {
   result: AlgorithmResult;
   simState: 'idle' | 'running' | 'complete';
@@ -18,10 +15,6 @@ export interface GanttChartProps {
 
 function getBlockDuration(block: GanttBlock) {
   return block.end - block.start;
-}
-
-function getSegmentWidth(block: GanttBlock) {
-  return `${Math.max(getBlockDuration(block) * TIME_UNIT_WIDTH_REM, MIN_SEGMENT_WIDTH_REM)}rem`;
 }
 
 function getProcessLabel(processId: GanttBlock['processId']) {
@@ -44,6 +37,11 @@ export default function GanttChart({ result, simState, stepMode, currentStep }: 
     if (stepMode) return blocks.slice(0, currentStep + 1);
     return blocks;
   }, [simState, stepMode, currentStep, blocks]);
+
+  const totalDuration = useMemo(() => {
+    if (visibleBlocks.length === 0) return 0;
+    return visibleBlocks.reduce((sum, block) => sum + getBlockDuration(block), 0);
+  }, [visibleBlocks]);
 
   const chartSummary = useMemo(() => {
     if (visibleBlocks.length === 0) {
@@ -87,58 +85,63 @@ export default function GanttChart({ result, simState, stepMode, currentStep }: 
           </div>
         ) : (
           <>
-            <div className="bg-surface-dim/30 rounded-xl border border-outline-variant p-4 overflow-x-auto custom-scrollbar">
-              <ol className="flex min-w-max items-stretch gap-2" aria-label="Scheduled CPU blocks">
+            <div className="bg-surface-dim/30 rounded-xl border border-outline-variant p-4">
+              <div className="flex w-full gap-1" aria-label="Scheduled CPU blocks">
                 {visibleBlocks.map((block, index) => {
                   const label = getProcessLabel(block.processId);
                   const duration = getBlockDuration(block);
+                  const widthPercent = totalDuration > 0 ? (duration / totalDuration) * 100 : 0;
 
                   return (
-                    <motion.li
+                    <motion.div
                       key={`${block.processId ?? 'idle'}-${block.start}-${block.end}-${index}`}
                       initial={{ opacity: 0, scaleX: 0 }}
                       animate={{ opacity: 1, scaleX: 1 }}
                       transition={{ duration: 0.3, delay: stepMode ? 0 : index * 0.05, ease: 'easeOut' }}
                       className="flex-none origin-left"
-                      style={{ width: getSegmentWidth(block) }}
+                      style={{ width: `${widthPercent}%`, minWidth: '48px' }}
                     >
                       <div
                         className={[
-                          'flex h-20 flex-col justify-between rounded-lg px-3 py-2 text-sm',
+                          'flex h-20 flex-col justify-between rounded-lg px-2 py-2 text-sm overflow-hidden',
                           block.processId === null
                             ? 'border border-dashed border-outline-variant bg-on-surface-variant/10 text-on-surface-variant'
                             : 'text-surface font-medium shadow-lg',
                         ].join(' ')}
                         style={getSegmentStyle(block)}
                       >
-                        <div>
-                          <p className="text-xs uppercase tracking-wider opacity-80">{label}</p>
-                          <p className="mt-0.5 font-mono font-semibold">{formatTime(duration)} units</p>
+                        <div className="min-w-0">
+                          <p className="text-xs uppercase tracking-wider opacity-80 truncate">{label}</p>
+                          <p className="mt-0.5 font-mono font-semibold text-xs sm:text-sm">{formatTime(duration)}u</p>
                         </div>
-                        <p className="text-xs font-mono opacity-80">
-                          {formatTime(block.start)} - {formatTime(block.end)}
+                        <p className="text-xs font-mono opacity-80 truncate">
+                          {formatTime(block.start)}-{formatTime(block.end)}
                         </p>
                       </div>
-                    </motion.li>
+                    </motion.div>
                   );
                 })}
-              </ol>
+              </div>
 
-              <div className="mt-3 flex min-w-max gap-2">
-                {visibleBlocks.map((block, index) => (
-                  <div
-                    key={`${block.start}-${block.end}-${index}`}
-                    className="relative h-7 flex-none border-l border-outline-variant text-xs font-mono text-on-surface-variant"
-                    style={{ width: getSegmentWidth(block) }}
-                  >
-                    <span className="absolute left-0 top-2 -translate-x-1/2 rounded-full border border-outline-variant bg-background px-2 py-0.5 text-xs">
-                      {formatTime(block.start)}
-                    </span>
-                  </div>
-                ))}
+              <div className="mt-3 flex w-full gap-1">
+                {visibleBlocks.map((block, index) => {
+                  const duration = getBlockDuration(block);
+                  const widthPercent = totalDuration > 0 ? (duration / totalDuration) * 100 : 0;
+                  return (
+                    <div
+                      key={`${block.start}-${block.end}-${index}`}
+                      className="relative flex-none border-l border-outline-variant text-xs font-mono text-on-surface-variant"
+                      style={{ width: `${widthPercent}%`, minWidth: '48px' }}
+                    >
+                      <span className="absolute left-0 top-1 -translate-x-1/2 rounded-full border border-outline-variant bg-background px-1.5 py-0.5 text-xs whitespace-nowrap">
+                        {formatTime(block.start)}
+                      </span>
+                    </div>
+                  );
+                })}
                 {visibleBlocks.length > 0 && (
-                  <div className="relative h-7 border-l border-outline-variant text-xs font-mono text-on-surface-variant">
-                    <span className="absolute left-0 top-2 -translate-x-1/2 rounded-full border border-outline-variant bg-background px-2 py-0.5 text-xs">
+                  <div className="relative flex-none border-l border-outline-variant text-xs font-mono text-on-surface-variant" style={{ width: '1px' }}>
+                    <span className="absolute left-0 top-1 -translate-x-1/2 rounded-full border border-outline-variant bg-background px-1.5 py-0.5 text-xs whitespace-nowrap">
                       {formatTime(visibleBlocks[visibleBlocks.length - 1].end)}
                     </span>
                   </div>

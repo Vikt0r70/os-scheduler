@@ -8,7 +8,6 @@ import { AddIcon, CloseIcon } from './Icons';
 const MAX_PROCESSES = 20;
 
 const emptyForm = {
-  name: '',
   arrivalTime: '',
   burstTime: '',
   priority: '',
@@ -29,16 +28,16 @@ function getNextProcessId(processes: Process[]) {
   return processes.reduce((largestId, process) => Math.max(largestId, process.id), 0) + 1;
 }
 
-function parseProcessForm(form: ProcessFormState) {
+function getAutoName(processes: Process[]): string {
+  const nextId = getNextProcessId(processes);
+  return `P${nextId}`;
+}
+
+function parseProcessForm(form: ProcessFormState, autoName: string) {
   const errors: ProcessFormErrors = {};
-  const trimmedName = form.name.trim();
   const arrivalTime = Number(form.arrivalTime);
   const burstTime = Number(form.burstTime);
   const priority = Number(form.priority);
-
-  if (!trimmedName) {
-    errors.name = 'Enter a process name.';
-  }
 
   if (form.arrivalTime.trim() === '' || !Number.isFinite(arrivalTime) || arrivalTime < 0) {
     errors.arrivalTime = 'Arrival time must be 0 or greater.';
@@ -58,7 +57,7 @@ function parseProcessForm(form: ProcessFormState) {
 
   return {
     process: {
-      name: trimmedName,
+      name: autoName,
       arrivalTime,
       burstTime,
       priority,
@@ -76,14 +75,14 @@ export default function ProcessInput({
 }: ProcessInputProps) {
   const [form, setForm] = useState<ProcessFormState>(emptyForm);
   const [errors, setErrors] = useState<ProcessFormErrors>({});
-  const [editingProcessId, setEditingProcessId] = useState<Process['id'] | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const isEditing = editingProcessId !== null;
   const processCountLabel = useMemo(
     () => `${processes.length}/${MAX_PROCESSES} processes`,
     [processes.length],
   );
+
+  const autoName = useMemo(() => getAutoName(processes), [processes]);
 
   function updateField(field: keyof ProcessFormState, value: string) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -93,13 +92,12 @@ export default function ProcessInput({
   function resetForm() {
     setForm(emptyForm);
     setErrors({});
-    setEditingProcessId(null);
     setShowAddForm(false);
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const parsed = parseProcessForm(form);
+    const parsed = parseProcessForm(form, autoName);
 
     if (Object.keys(parsed.errors).length > 0) {
       setErrors(parsed.errors);
@@ -108,25 +106,18 @@ export default function ProcessInput({
 
     if (!parsed.process) return;
 
-    if (!isEditing && processes.length >= MAX_PROCESSES) {
+    if (processes.length >= MAX_PROCESSES) {
       setErrors({ form: 'You can add up to 20 processes.' });
       return;
     }
 
-    if (isEditing) {
-      onUpdate({ ...parsed.process, id: editingProcessId });
-    } else {
-      onAdd({ ...parsed.process, id: getNextProcessId(processes) });
-    }
-
+    onAdd({ ...parsed.process, id: getNextProcessId(processes) });
     resetForm();
   }
 
   function handleInlineUpdate(process: Process, field: keyof Process, value: string) {
     const numValue = Number(value);
-    if (field === 'name') {
-      onUpdate({ ...process, name: value });
-    } else if (field === 'arrivalTime') {
+    if (field === 'arrivalTime') {
       if (value === '' || numValue < 0) return;
       onUpdate({ ...process, arrivalTime: numValue });
     } else if (field === 'burstTime') {
@@ -258,20 +249,24 @@ export default function ProcessInput({
                   className="border-b border-outline-variant/50"
                 >
                   <td colSpan={5} className="py-3">
-                    <form onSubmit={handleSubmit} className="flex items-center gap-2">
-                      <input
-                        placeholder="Name"
-                        value={form.name}
-                        onChange={(e) => updateField('name', e.target.value)}
-                        className="w-20 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors"
-                      />
+                    <form onSubmit={handleSubmit} className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 min-w-[80px]">
+                        <span
+                          className="w-3 h-3 rounded-full shrink-0"
+                          style={{
+                            backgroundColor: getProcessColor(getNextProcessId(processes)),
+                            boxShadow: `0 0 8px ${getProcessColor(getNextProcessId(processes))}66`,
+                          }}
+                        />
+                        <span className="font-mono text-sm text-on-surface font-medium">{autoName}</span>
+                      </div>
                       <input
                         type="number"
                         min={0}
                         placeholder="0"
                         value={form.arrivalTime}
                         onChange={(e) => updateField('arrivalTime', e.target.value)}
-                        className="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
+                        className="w-20 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
                       />
                       <input
                         type="number"
@@ -279,36 +274,42 @@ export default function ProcessInput({
                         placeholder="5"
                         value={form.burstTime}
                         onChange={(e) => updateField('burstTime', e.target.value)}
-                        className="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
+                        className="w-20 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
                       />
                       <input
                         type="number"
                         placeholder="1"
                         value={form.priority}
                         onChange={(e) => updateField('priority', e.target.value)}
-                        className="w-16 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
+                        className="w-20 bg-surface border border-outline-variant rounded px-2 py-1 font-mono text-sm focus:border-secondary-fixed-dim focus:ring-1 focus:ring-secondary-fixed-dim outline-none text-on-surface transition-colors text-center"
                       />
                       <div className="flex gap-2 ml-auto">
                         <button
                           type="button"
                           onClick={resetForm}
-                          className="text-on-surface-variant hover:text-on-surface px-2 py-1 rounded border border-outline-variant hover:border-outline transition-colors text-sm cursor-pointer"
+                          className="text-on-surface-variant hover:text-on-surface px-3 py-1.5 rounded border border-outline-variant hover:border-outline transition-colors text-sm cursor-pointer"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
-                          className="bg-primary text-on-primary px-3 py-1 rounded font-mono text-xs font-semibold hover:brightness-110 transition-all cursor-pointer"
+                          className="bg-primary text-on-primary px-4 py-1.5 rounded font-mono text-xs font-semibold hover:brightness-110 transition-all cursor-pointer"
                         >
-                          Add
+                          Add {autoName}
                         </button>
                       </div>
                     </form>
                     {errors.form && (
                       <p className="text-error text-xs mt-2">{errors.form}</p>
                     )}
-                    {errors.name && (
-                      <p className="text-error text-xs mt-1">{errors.name}</p>
+                    {errors.arrivalTime && (
+                      <p className="text-error text-xs mt-1">{errors.arrivalTime}</p>
+                    )}
+                    {errors.burstTime && (
+                      <p className="text-error text-xs mt-1">{errors.burstTime}</p>
+                    )}
+                    {errors.priority && (
+                      <p className="text-error text-xs mt-1">{errors.priority}</p>
                     )}
                   </td>
                 </motion.tr>
