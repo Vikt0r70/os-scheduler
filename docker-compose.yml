@@ -1,0 +1,14 @@
+services:
+  os-scheduler:
+    build: .
+    container_name: os-scheduler
+    restart: unless-stopped
+    networks:
+      - caddy-proxy
+    expose:
+      - "80"
+
+networks:
+  caddy-proxy:
+    external: true
+    name: caddy-proxy_default
