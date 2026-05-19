@@ -2,7 +2,6 @@ import { useMemo, useState, useCallback, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 
 import ComparisonTable from './components/ComparisonTable';
-import Footer from './components/Footer';
 import GanttChart from './components/GanttChart';
 import MetricsTable from './components/MetricsTable';
 import ProcessInput from './components/ProcessInput';
@@ -16,6 +15,7 @@ import {
   BarChartIcon,
   CheckCircleIcon,
   XCircleIcon,
+  GitHubIcon,
 } from './components/Icons';
 
 const algorithmTabs: Array<{ id: AlgorithmType; label: string }> = [
@@ -147,10 +147,23 @@ export default function App() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-lg text-on-surface-variant mb-8 max-w-2xl leading-relaxed"
+            className="text-lg text-on-surface-variant mb-6 max-w-2xl leading-relaxed"
           >
             Visualize and analyze fundamental operating system scheduling algorithms including FCFS, SJF, Round Robin, and Priority Scheduling in real-time.
           </motion.p>
+
+          <motion.a
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.25 }}
+            href="https://github.com/Vikt0r70/os-scheduler"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors mb-6 font-mono text-xs"
+          >
+            <GitHubIcon />
+            View on GitHub
+          </motion.a>
 
           <motion.button
             initial={{ opacity: 0, y: 10 }}
@@ -313,7 +326,7 @@ export default function App() {
                     className="bg-primary text-on-primary px-4 py-2 rounded font-mono text-sm font-semibold hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(94,234,212,0.3)] hover:shadow-[0_0_20px_rgba(94,234,212,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <PlayIcon />
-                    {simState === 'idle' ? 'Start' : simState === 'running' ? 'Running...' : 'Complete'}
+                    {simState === 'idle' ? 'Start' : isComplete ? 'Complete' : 'Running...'}
                   </button>
                 </div>
               </div>
@@ -403,7 +416,6 @@ export default function App() {
         </AnimatePresence>
       </main>
 
-      <Footer />
     </div>
   );
 }
