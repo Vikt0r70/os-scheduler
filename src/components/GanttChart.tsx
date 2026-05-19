@@ -11,7 +11,9 @@ const MIN_SEGMENT_WIDTH_REM = 4.5;
 
 export interface GanttChartProps {
   result: AlgorithmResult;
-  hasStarted: boolean;
+  simState: 'idle' | 'running' | 'complete';
+  stepMode: boolean;
+  currentStep: number;
 }
 
 function getBlockDuration(block: GanttBlock) {
@@ -34,38 +36,52 @@ function getSegmentStyle(block: GanttBlock): CSSProperties | undefined {
   return { backgroundColor: color, borderColor: color };
 }
 
-export default function GanttChart({ result, hasStarted }: GanttChartProps) {
+export default function GanttChart({ result, simState, stepMode, currentStep }: GanttChartProps) {
   const blocks = result.ganttBlocks;
+
+  const visibleBlocks = useMemo(() => {
+    if (simState === 'idle') return [];
+    if (stepMode) return blocks.slice(0, currentStep + 1);
+    return blocks;
+  }, [simState, stepMode, currentStep, blocks]);
+
   const chartSummary = useMemo(() => {
-    if (blocks.length === 0) {
+    if (visibleBlocks.length === 0) {
       return { endTime: 0, processBlockCount: 0, idleBlockCount: 0 };
     }
-    return blocks.reduce(
+    return visibleBlocks.reduce(
       (summary, block) => ({
         endTime: Math.max(summary.endTime, block.end),
         processBlockCount: summary.processBlockCount + (block.processId === null ? 0 : 1),
         idleBlockCount: summary.idleBlockCount + (block.processId === null ? 1 : 0),
       }),
-      { endTime: blocks[0].end, processBlockCount: 0, idleBlockCount: 0 },
+      { endTime: visibleBlocks[0].end, processBlockCount: 0, idleBlockCount: 0 },
     );
-  }, [blocks]);
+  }, [visibleBlocks]);
+
+  const isIdle = simState === 'idle';
 
   return (
     <div className="bg-surface-container border border-outline-variant rounded-xl overflow-hidden shadow-lg hover-card">
-      <div className="px-6 py-4 border-b border-outline-variant bg-surface-container-highest">
+      <div className="px-6 py-4 border-b border-outline-variant bg-surface-container-highest flex items-center justify-between">
         <h2 className="font-display text-xl font-semibold">Gantt Chart</h2>
+        {!isIdle && stepMode && (
+          <span className="font-mono text-xs text-on-surface-variant">
+            Step {currentStep + 1} of {blocks.length}
+          </span>
+        )}
       </div>
 
       <div className="p-6">
-        {!hasStarted || blocks.length === 0 ? (
+        {isIdle || visibleBlocks.length === 0 ? (
           <div className="flex-1 flex items-center justify-center bg-surface-dim/30 rounded-xl min-h-[200px]">
             <div className="text-center group">
               <BarChartIcon className="w-16 h-16 text-outline-variant mx-auto mb-4 group-hover:scale-110 transition-transform duration-500" />
               <p className="font-mono text-sm text-on-surface-variant">
-                {hasStarted ? 'No simulation data' : 'No simulation data'}
+                {isIdle ? 'No simulation data' : 'No blocks to display'}
               </p>
               <p className="text-sm text-outline mt-1">
-                {hasStarted ? 'Add processes to see the schedule' : "Click 'Start' to run the simulation"}
+                {isIdle ? "Click 'Start' to run the simulation" : 'Add processes to see the schedule'}
               </p>
             </div>
           </div>
@@ -73,15 +89,16 @@ export default function GanttChart({ result, hasStarted }: GanttChartProps) {
           <>
             <div className="bg-surface-dim/30 rounded-xl border border-outline-variant p-4 overflow-x-auto custom-scrollbar">
               <ol className="flex min-w-max items-stretch gap-2" aria-label="Scheduled CPU blocks">
-                {blocks.map((block, index) => {
+                {visibleBlocks.map((block, index) => {
                   const label = getProcessLabel(block.processId);
                   const duration = getBlockDuration(block);
+
                   return (
                     <motion.li
                       key={`${block.processId ?? 'idle'}-${block.start}-${block.end}-${index}`}
                       initial={{ opacity: 0, scaleX: 0 }}
                       animate={{ opacity: 1, scaleX: 1 }}
-                      transition={{ duration: 0.3, delay: index * 0.05, ease: 'easeOut' }}
+                      transition={{ duration: 0.3, delay: stepMode ? 0 : index * 0.05, ease: 'easeOut' }}
                       className="flex-none origin-left"
                       style={{ width: getSegmentWidth(block) }}
                     >
@@ -108,7 +125,7 @@ export default function GanttChart({ result, hasStarted }: GanttChartProps) {
               </ol>
 
               <div className="mt-3 flex min-w-max gap-2">
-                {blocks.map((block, index) => (
+                {visibleBlocks.map((block, index) => (
                   <div
                     key={`${block.start}-${block.end}-${index}`}
                     className="relative h-7 flex-none border-l border-outline-variant text-xs font-mono text-on-surface-variant"
@@ -119,11 +136,13 @@ export default function GanttChart({ result, hasStarted }: GanttChartProps) {
                     </span>
                   </div>
                 ))}
-                <div className="relative h-7 border-l border-outline-variant text-xs font-mono text-on-surface-variant">
-                  <span className="absolute left-0 top-2 -translate-x-1/2 rounded-full border border-outline-variant bg-background px-2 py-0.5 text-xs">
-                    {formatTime(blocks[blocks.length - 1].end)}
-                  </span>
-                </div>
+                {visibleBlocks.length > 0 && (
+                  <div className="relative h-7 border-l border-outline-variant text-xs font-mono text-on-surface-variant">
+                    <span className="absolute left-0 top-2 -translate-x-1/2 rounded-full border border-outline-variant bg-background px-2 py-0.5 text-xs">
+                      {formatTime(visibleBlocks[visibleBlocks.length - 1].end)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 

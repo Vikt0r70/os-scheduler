@@ -22,6 +22,7 @@ export interface ProcessInputProps {
   onAdd: (process: Process) => void;
   onUpdate: (process: Process) => void;
   onRemove: (processId: Process['id']) => void;
+  onChange?: () => void;
 }
 
 function getNextProcessId(processes: Process[]) {
@@ -71,6 +72,7 @@ export default function ProcessInput({
   onAdd,
   onUpdate,
   onRemove,
+  onChange,
 }: ProcessInputProps) {
   const [form, setForm] = useState<ProcessFormState>(emptyForm);
   const [errors, setErrors] = useState<ProcessFormErrors>({});
@@ -134,6 +136,7 @@ export default function ProcessInput({
       if (value === '' || !Number.isInteger(numValue)) return;
       onUpdate({ ...process, priority: numValue });
     }
+    onChange?.();
   }
 
   return (

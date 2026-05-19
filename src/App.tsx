@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 
 import ComparisonTable from './components/ComparisonTable';
@@ -12,6 +12,7 @@ import type { AlgorithmType, Process } from './types';
 import {
   PlayIcon,
   ResetIcon,
+  SkipNextIcon,
   BarChartIcon,
   CheckCircleIcon,
   XCircleIcon,
@@ -38,18 +39,30 @@ export default function App() {
     selectedResult,
   } = useScheduler();
 
-  const [hasStarted, setHasStarted] = useState(false);
-  const [showComparison, setShowComparison] = useState(false);
+  const [simState, setSimState] = useState<'idle' | 'running' | 'complete'>('idle');
+  const [currentStep, setCurrentStep] = useState(0);
   const [stepMode, setStepMode] = useState(false);
+  const [showComparison, setShowComparison] = useState(false);
 
   const algorithmInfo = useMemo(
     () => getAlgorithmInfo(selectedAlgorithm),
     [selectedAlgorithm],
   );
 
+  const maxSteps = selectedResult.ganttBlocks.length;
+  const isComplete = stepMode ? currentStep >= maxSteps - 1 : simState === 'complete';
+
+  // Reset simulation when algorithm changes
+  useEffect(() => {
+    setSimState('idle');
+    setCurrentStep(0);
+  }, [selectedAlgorithm]);
+
   const handleAdd = useCallback(
     (process: Process) => {
       setProcesses((current) => [...current, process]);
+      setSimState('idle');
+      setCurrentStep(0);
     },
     [setProcesses],
   );
@@ -66,6 +79,8 @@ export default function App() {
   const handleRemove = useCallback(
     (processId: Process['id']) => {
       setProcesses((current) => current.filter((p) => p.id !== processId));
+      setSimState('idle');
+      setCurrentStep(0);
     },
     [setProcesses],
   );
@@ -77,11 +92,31 @@ export default function App() {
       { id: 3, name: 'P3', arrivalTime: 2, burstTime: 9, priority: 3 },
       { id: 4, name: 'P4', arrivalTime: 3, burstTime: 5, priority: 2 },
     ]);
-    setHasStarted(false);
+    setSimState('idle');
+    setCurrentStep(0);
+    setStepMode(false);
   }, [setProcesses]);
 
   const handleStart = useCallback(() => {
-    setHasStarted(true);
+    setSimState('running');
+    setCurrentStep(0);
+    if (!stepMode) {
+      // Auto-complete if not in step mode
+      setTimeout(() => setSimState('complete'), 300);
+    }
+  }, [stepMode]);
+
+  const handleStep = useCallback(() => {
+    if (currentStep < maxSteps - 1) {
+      setCurrentStep((s) => s + 1);
+    } else {
+      setSimState('complete');
+    }
+  }, [currentStep, maxSteps]);
+
+  const handleProcessChange = useCallback(() => {
+    setSimState('idle');
+    setCurrentStep(0);
   }, []);
 
   return (
@@ -146,6 +181,7 @@ export default function App() {
                 onAdd={handleAdd}
                 onUpdate={handleUpdate}
                 onRemove={handleRemove}
+                onChange={handleProcessChange}
               />
             </motion.div>
 
@@ -258,7 +294,11 @@ export default function App() {
                     <input
                       type="checkbox"
                       checked={stepMode}
-                      onChange={(e) => setStepMode(e.target.checked)}
+                      onChange={(e) => {
+                        setStepMode(e.target.checked);
+                        setSimState('idle');
+                        setCurrentStep(0);
+                      }}
                       className="w-4 h-4 rounded border-outline-variant bg-surface text-secondary-fixed-dim focus:ring-secondary-fixed-dim cursor-pointer"
                     />
                     <span className="font-mono text-xs text-on-surface-variant group-hover:text-on-surface transition-colors">
@@ -274,16 +314,46 @@ export default function App() {
                     >
                       <ResetIcon />
                     </button>
+                    {simState !== 'idle' && stepMode && (
+                      <button
+                        type="button"
+                        onClick={handleStep}
+                        disabled={isComplete}
+                        className="text-on-surface-variant hover:text-on-surface px-3 py-2 rounded border border-outline-variant hover:border-outline hover:bg-surface-variant/50 active:scale-95 transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Next Step"
+                      >
+                        <SkipNextIcon />
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleStart}
-                      className="bg-primary text-on-primary px-4 py-2 rounded font-mono text-sm font-semibold hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(94,234,212,0.3)] hover:shadow-[0_0_20px_rgba(94,234,212,0.5)]"
+                      disabled={simState !== 'idle'}
+                      className="bg-primary text-on-primary px-4 py-2 rounded font-mono text-sm font-semibold hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(94,234,212,0.3)] hover:shadow-[0_0_20px_rgba(94,234,212,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <PlayIcon />
-                      Start
+                      {simState === 'idle' ? 'Start' : simState === 'running' ? 'Running...' : 'Complete'}
                     </button>
                   </div>
                 </div>
+
+                {/* Step Progress */}
+                {simState !== 'idle' && stepMode && maxSteps > 0 && (
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-xs font-mono text-on-surface-variant mb-1">
+                      <span>Step Progress</span>
+                      <span>{Math.min(currentStep + 1, maxSteps)} / {maxSteps}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-surface-dim rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-primary rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${((Math.min(currentStep + 1, maxSteps)) / maxSteps) * 100}%` }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </motion.div>
           </div>
@@ -292,15 +362,25 @@ export default function App() {
           <div className="lg:col-span-7 flex flex-col gap-4">
             <AnimatePresence mode="wait">
               <motion.div
-                key={selectedResult.algorithm + (hasStarted ? '-started' : '')}
+                key={selectedResult.algorithm + simState + currentStep}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25 }}
                 className="flex flex-col gap-4"
               >
-                <GanttChart result={selectedResult} hasStarted={hasStarted} />
-                <MetricsTable result={selectedResult} hasStarted={hasStarted} />
+                <GanttChart
+                  result={selectedResult}
+                  simState={simState}
+                  stepMode={stepMode}
+                  currentStep={currentStep}
+                />
+                <MetricsTable
+                  result={selectedResult}
+                  simState={simState}
+                  stepMode={stepMode}
+                  currentStep={currentStep}
+                />
               </motion.div>
             </AnimatePresence>
           </div>
